@@ -1,5 +1,8 @@
 # python-games
 
+For playing music, install vlc:
+    $ pip install python-vlc
+
 Execution:
   $ python BasicSpaceInvaders.py
   

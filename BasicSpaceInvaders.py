@@ -1,7 +1,8 @@
 import os
 import random
 import curses
-import numpy as np
+import vlc
+import time
 
 """
 Additional files needed to run properly:
@@ -45,12 +46,11 @@ def loading_screen(BONUS, mode = 'initalize'):
                 w.addstr(int(SH/2)-4, int(0.4*SW), "--->")
                 CHOICE = "top"
             if (key == 10) and (CHOICE == "top"):
+                t = time.time()
                 w.erase()
                 LOADING = False
-                return 0
+                return 0,t
             if (key == 10) and (CHOICE == "bottom"):
-                PID = os.system("pidof watch")
-                os.system("kill "+str(PID))
                 curses.endwin()
                 quit()
 
@@ -81,12 +81,14 @@ def loading_screen(BONUS, mode = 'initalize'):
                 w.addstr(int(SH/2)-4, int(0.4*SW), "--->")
                 CHOICE = "top"
             if (key == 10) and (CHOICE == "top"):
+                t = time.time()
+                v = vlc.Instance("--quiet")
+                p = v.media_player_new("spaceinvaders.mp3")
+                p.play()
                 w.erase()
                 LOADING = False
-                return 0
+                return 0,t
             if (key == 10) and (CHOICE == "bottom"):
-                PID = os.system("pidof watch")
-                os.system("kill "+str(PID))
                 curses.endwin()
                 quit()
 
@@ -174,12 +176,8 @@ def clear_screen():
     
     for i in range(len(fired_bullets)):
         if i in delete_bullets_fired:
-            try:
-                fired_bullets.pop(i)  
-            except:
-                PID = os.system("pidof watch")
-                os.system("kill "+str(PID))
-                os.system('echo "ERROR deleting fired bullets" ') # sometimes this happens...
+            fired_bullets.pop(i)  
+
             
             
             
@@ -195,7 +193,9 @@ def clear_debris(loop_count):
     
         
 # INITIALIZE SCREEN
-os.system("watch -n 1 nohup mpg123 -q "+"spaceinvaders.mp3 &") #play song on repeat, and in quiet mode (-q) so no text is output to screen
+v = vlc.Instance("--quiet")
+p = v.media_player_new("spaceinvaders.mp3")
+p.play()
 speed = 15
 s = curses.initscr()
 curses.curs_set(0)
@@ -217,8 +217,14 @@ loop_count = 0
 num_bullets = 20
 BONUS = 0
 
-loop_count = loading_screen(loop_count)
+loop_count, t = loading_screen(loop_count)
 while True:
+    if (time.time() - t) > 75:
+        v = vlc.Instance("--quiet")
+        p = v.media_player_new("spaceinvaders.mp3")
+        p.play()
+        t = time.time()
+        
     next_key = w.getch()
     key = 0 if next_key == -1 else next_key
     
@@ -250,13 +256,14 @@ while True:
     if any(item in ship_zone for item in all_bullets_pack) :
         num_bullets += 10
     if any(item in ship_zone for item in all_rocks):
+        p.stop()
         all_rocks = []
         all_bullets_pack = []
         fired_bullets = []
         num_bullets = 20
         speed = 15
         loop_count = 0
-        BONUS = loading_screen(BONUS, mode = 'retry')
+        BONUS, t = loading_screen(BONUS, mode = 'retry')
         h[1] = spaceship_x
         b[1] = spaceship_x-1
         
@@ -278,5 +285,5 @@ while True:
     w.addstr(SH-1,2,'             ')
     w.addstr(SH-1,2,score)
     w.addstr(SH-1,15,'               ')
-    w.addstr(SH-1,15,bullets_score)  #glitchy when song restarts due to clearing the screen
+    w.addstr(SH-1,15,bullets_score)
     
